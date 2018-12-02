@@ -1,0 +1,6 @@
+out/
+.idea/workspace.xml
+.idea
+build/
+.gradle/
+venv/
