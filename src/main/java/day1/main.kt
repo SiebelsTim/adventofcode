@@ -3,7 +3,7 @@ package day1
 import base.BaseSolution
 import java.lang.IllegalStateException
 
-class Solution : BaseSolution<List<Int>>("Day 1") {
+class Solution : BaseSolution<List<Int>, Int, Int>("Day 1") {
     override fun parseInput(): List<Int> = loadInput().split("\n")
         .filter { it.isNotBlank() }
         .map { it.toInt() }
