@@ -56,12 +56,7 @@ class Solution : BaseSolution<List<String>, Int, String>("Day 2") {
             operator fun plus(other: Result) = Result(twos + other.twos, threes + other.threes)
         }
         fun calculate(): Result {
-            val map = mutableMapOf<Char, Int>()
-            val input = input.toCharArray()
-            for (c in input) {
-                map[c] = (map[c] ?: 0) + 1
-            }
-
+            val map = input.groupingBy { it }.eachCount()
             val results = map.filter { it.value >= 2 }
                 .map { if (it.value == 2) '2' else '3' }
 
