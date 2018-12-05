@@ -38,14 +38,12 @@ class Solution : BaseSolution<List<Solution.Event>, Int, Int>("Day 4") {
         class Begin(val guard: Int): Message()
     }
 
-    data class Guard(val id: Int, val sleepTimes: MutableMap<Date, MutableList<IntRange>> = mutableMapOf()) {
-        fun howMuchSleep(): Int = sleepTimes.flatMap {
-            it.value.map { range -> range.endInclusive - range.start }
-        }.sum()
+    data class Guard(val id: Int, val sleepTimes: MutableList<IntRange> = mutableListOf()) {
+        fun howMuchSleep(): Int = sleepTimes.map { range -> range.endInclusive - range.start }.sum()
 
         fun getMostSleepyMinute(): Minute? = getMostSleepyMinuteWithCount()?.first
 
-        fun getMostSleepyMinuteWithCount(): Pair<Minute, Count>? = sleepTimes.flatMap { it.value }
+        fun getMostSleepyMinuteWithCount(): Pair<Minute, Count>? = sleepTimes
             .flatMap { it.toList() }
             .groupingBy { it }
             .eachCount()
@@ -99,8 +97,7 @@ class Solution : BaseSolution<List<Solution.Event>, Int, Int>("Day 4") {
                 }
                 Message.Sleep -> sleepStart = event.time.minutes
                 Message.WakeUp -> {
-                    currentGuard.sleepTimes.putIfAbsent(event.date, mutableListOf())
-                    currentGuard.sleepTimes[event.date]!!.add(sleepStart..event.time.minutes)
+                    currentGuard.sleepTimes.add(sleepStart until event.time.minutes)
                 }
             }
         }
