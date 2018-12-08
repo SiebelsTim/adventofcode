@@ -7,7 +7,8 @@ fun main(args: Array<String>) {
         day3.Solution(),
         day4.Solution(),
         day5.Solution(),
-        day6.Solution()
+        day6.Solution(),
+        day7.Solution()
     ).forEach {
         it.solveWithMeasurement()
     }
