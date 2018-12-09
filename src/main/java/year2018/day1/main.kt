@@ -1,7 +1,6 @@
-package day1
+package year2018.day1
 
-import base.BaseSolution
-import java.lang.IllegalStateException
+import year2018.base.BaseSolution
 
 class Solution : BaseSolution<List<Int>, Int, Int>("Day 1") {
     override fun parseInput(): List<Int> = loadInput().split("\n")

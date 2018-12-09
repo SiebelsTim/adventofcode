@@ -1,6 +1,4 @@
-package base
-
-import kotlin.system.measureTimeMillis
+package year2018.base
 
 abstract class BaseSolution<T, T1, T2>(val title: String) {
     fun loadInput(): String {

@@ -1,6 +1,6 @@
-package day2
+package year2018.day2
 
-import base.BaseSolution
+import year2018.base.BaseSolution
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 

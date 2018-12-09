@@ -1,6 +1,6 @@
-package day7
+package year2018.day7
 
-import base.BaseSolution
+import year2018.base.BaseSolution
 import kotlin.math.max
 
 class Solution : BaseSolution<List<Solution.Message>, String, Int>("Day 7") {

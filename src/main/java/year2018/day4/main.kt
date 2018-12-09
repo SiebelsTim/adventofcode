@@ -1,6 +1,6 @@
-package day4
+package year2018.day4
 
-import base.BaseSolution
+import year2018.base.BaseSolution
 
 typealias Minute = Int
 typealias Count = Int
