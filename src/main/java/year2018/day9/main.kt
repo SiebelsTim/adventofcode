@@ -20,65 +20,55 @@ class Solution : BaseSolution<Pair<PlayerCount, Points>, Long, Long>("Day 9") {
         return solve(players, lastPoints * 100)
     }
 
-    private fun solve(players: PlayerCount, lastPoints: Points): Long {
+    private fun solve(players: Int, lastPoints: Int): Long {
         val nextPlayer = generateSequence(1) { ((it + 1) % players) }.iterator()
-        val marbles = generateSequence(2L) { i -> i + 1 }.take(lastPoints)
-        val board = Queue(0L)
-        var current = board.add(1)
+        val marbles = generateSequence(1L) { i -> i + 1 }.take(lastPoints)
+        var current = Node(0L)
         val playerScores = LongArray(players)
 
         for (currentMarble in marbles) {
             val currentPlayer = nextPlayer.next()
             if (currentMarble % 23 == 0L) {
-                for (i in 1..7) {
+                repeat(7) {
                     current = current.prev
                 }
                 playerScores[currentPlayer] += current.value + currentMarble
-                board.remove(current)
+                current.remove()
                 current = current.next
             } else {
-                current = board.addAfter(current.next, currentMarble)
+                current = current.next.addAfter(currentMarble)
             }
         }
 
         return playerScores.max()!!
     }
 }
+class Node<T>(var value: T) {
+    var next: Node<T> = this
+    var prev: Node<T> = this
 
-class Queue<T>(initial: T) {
-    class Node<T>(var value: T) {
-        var next: Node<T> = this
-        var prev: Node<T> = this
-    }
-
-    var start: Node<T> = Node<T>(initial)
-
-    fun addAfter(before: Node<T>, value: T): Node<T> {
-        val node = Node<T>(value)
-        before.next.prev = node
-        node.next = before.next
-        before.next = node
-        node.prev = before
+    fun addAfter(value: T): Node<T> {
+        val node = Node(value)
+        this.next.prev = node
+        node.next = this.next
+        this.next = node
+        node.prev = this
 
         return node
     }
 
-    fun add(value: T): Node<T> {
-        return addAfter(start.prev, value)
-    }
-
-    fun remove(node: Node<T>) {
-        node.prev.next = node.next
-        node.next.prev = node.prev
+    fun remove() {
+        this.prev.next = this.next
+        this.next.prev = this.prev
     }
 
     fun toList(): List<T> {
         val ret = mutableListOf<T>()
-        var current = start
+        var current = this
         do {
             ret += current.value
             current = current.next
-        } while (current != start)
+        } while (current != this)
 
         return ret
     }
