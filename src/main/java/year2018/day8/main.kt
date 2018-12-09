@@ -3,32 +3,32 @@ package year2018.day8
 import year2018.base.BaseSolution
 
 class Solution : BaseSolution<List<Int>, Int, Int>("Day 8") {
-    class Node(val children: List<Node>, val metadata: List<Int>) {
+    class Node(val children: Array<Node>, val metadata: IntArray) {
         fun sumMetadata(): Int {
-            return metadata.sum() + children.map { it.sumMetadata() }.sum()
+            return metadata.sum() + children.sumBy { it.sumMetadata() }
         }
 
         fun getValue(): Int = if (children.isEmpty()) {
             metadata.sum()
         } else {
-            metadata.map { idx ->
+            metadata.sumBy { idx ->
                 if (idx-1 < children.size) {
                     children[idx-1].getValue()
                 } else {
                     0
                 }
-            }.sum()
+            }
         }
 
         companion object {
             fun parse(iterator: Iterator<Int>): Node {
                 val childCount = iterator.next()
                 val metadataCount = iterator.next()
-                val children = (0 until childCount).map {
+                val children = Array(childCount) {
                     Node.parse(iterator)
                 }
 
-                val metadata = (0 until metadataCount).map {
+                val metadata = IntArray(metadataCount) {
                     iterator.next()
                 }
 
@@ -42,7 +42,6 @@ class Solution : BaseSolution<List<Int>, Int, Int>("Day 8") {
     override fun calculateResult1(): Int {
         val input = parseInput()
         val root = Node.parse(input.iterator())
-
 
         return root.sumMetadata()
     }
