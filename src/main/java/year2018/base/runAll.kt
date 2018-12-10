@@ -9,7 +9,9 @@ fun main(args: Array<String>) {
         year2018.day5.Solution(),
         year2018.day6.Solution(),
         year2018.day7.Solution(),
-        year2018.day8.Solution()
+        year2018.day8.Solution(),
+        year2018.day9.Solution(),
+        year2018.day10.Solution()
     ).forEach {
         it.solveWithMeasurement()
     }
