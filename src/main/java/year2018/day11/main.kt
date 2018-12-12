@@ -1,9 +1,13 @@
 package year2018.day11
 
 import year2018.base.BaseSolution
+import year2018.day11.Solution.Coordinate
 
-class Solution : BaseSolution<Int, Solution.Coordinate, Pair<Solution.Coordinate, Int>>("Day 11") {
-    data class Coordinate(val x: Int, val y: Int)
+class Solution : BaseSolution<Int, Coordinate, Pair<Coordinate, Int>>("Day 11") {
+    data class Coordinate(val x: Int, val y: Int) {
+        override fun toString(): String = "$x, $y"
+    }
+
     class Grid(val serial: Int) {
         private val table by lazy {
             calculateSummedAreaTable()
@@ -23,19 +27,19 @@ class Solution : BaseSolution<Int, Solution.Coordinate, Pair<Solution.Coordinate
 
         private fun calculateSummedAreaTable(): Array<IntArray> {
             val size = size
-            val table = Array(size) {
-                IntArray(size) { 10 }
+            val table = Array(size+1) {
+                IntArray(size+1) { 10 }
             }
 
             fun I(x: Int, y: Int): Int {
                 if (x-1 < 0 || y-1 < 0) {
                     return 0
                 }
-                table[x-1][y-1].takeIf { it != 10 }?.let {
+                table[x][y].takeIf { it != 10 }?.let {
                     return it
                 }
                 val ret = power(x, y) + I(x-1, y) + I(x, y-1) - I(x-1, y-1)
-                table[x-1][y-1] = ret
+                table[x][y] = ret
                 return ret
             }
 
@@ -45,26 +49,17 @@ class Solution : BaseSolution<Int, Solution.Coordinate, Pair<Solution.Coordinate
         }
 
         fun regionPower(startX: Int, startY: Int, n: Int = 3): Int {
-            val x1 = if (startX - 1 - 1 >= 0) {
-                startX - 1 - 1
-            } else {
-                0
-            }
-            val y1 = if (startY - 1 - 1 >= 0) {
-                startY - 1 - 1
-            } else {
-                0
-            }
-            val x2 = if (x1 + n < size) {
-                x1 + n
-            } else {
-                size - 1
-            }
-            val y2 = if (y1 + n < size) {
-                y1 + n
-            } else {
-                size - 1
-            }
+            /**
+             * https://en.wikipedia.org/wiki/Summed-area_table
+             * startX,startY = 1,1; n=2
+             * A X B
+             * X[X X]
+             * C[X D]
+             */
+            val x1 = startX - 1
+            val y1 = startY - 1
+            val x2 = x1 + n
+            val y2 = y1 + n
             val A = table[x1][y1]
             val B = table[x2][y1]
             val C = table[x1][y2]
@@ -73,6 +68,9 @@ class Solution : BaseSolution<Int, Solution.Coordinate, Pair<Solution.Coordinate
             return D + A - B - C
         }
     }
+
+    private val grid = Grid(parseInput())
+
     override fun parseInput(): Int = loadInput().trim().toInt()
 
     override fun calculateResult1(): Coordinate {
@@ -82,23 +80,19 @@ class Solution : BaseSolution<Int, Solution.Coordinate, Pair<Solution.Coordinate
     override fun calculateResult2(): Pair<Coordinate, Int> {
         return (1..300).map { n ->
             val power = findMaxRegion(n)
-            Triple(n, power.first, power.second)
+            Triple(n, power.first, power.second) // n, coord, power
         }.maxBy { it.third }!!.let {
             it.second to it.first
         }
     }
 
     private fun findMaxRegion(n: Int): Pair<Coordinate, Int> {
-        val grid = Grid(parseInput())
-        val summed = Array(grid.size) {
-            IntArray(grid.size)
-        }
-
-        val regions = summed.mapIndexed { x, arr ->
-            arr.mapIndexed { y, _ ->
-                Coordinate(x, y) to grid.regionPower(x, y, n)
+        val regions = mutableListOf<Pair<Coordinate, Int>>()
+        for (y in 1..grid.size-n+1) {
+            for (x in 1..grid.size-n+1) {
+                regions += Coordinate(x, y) to grid.regionPower(x, y, n)
             }
-        }.flatten()
+        }
 
         return regions.maxBy { it.second }!!
     }
