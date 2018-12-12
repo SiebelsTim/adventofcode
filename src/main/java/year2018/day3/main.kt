@@ -1,6 +1,6 @@
 package year2018.day3
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 import java.lang.IllegalStateException
 
 class Solution : BaseSolution<List<Solution.Rectangle>, Int, Int>("Day 3") {

@@ -1,6 +1,6 @@
 package year2018.day8
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 
 class Solution : BaseSolution<List<Int>, Int, Int>("Day 8") {
     class Node(val children: Array<Node>, val metadata: IntArray) {

@@ -1,6 +1,6 @@
 package year2018.day11
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 import year2018.day11.Solution.Coordinate
 
 class Solution : BaseSolution<Int, Coordinate, Pair<Coordinate, Int>>("Day 11") {

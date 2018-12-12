@@ -1,6 +1,6 @@
 package year2018.day1
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 
 class Solution : BaseSolution<List<Int>, Int, Int>("Day 1") {
     override fun parseInput(): List<Int> = loadInput().split("\n")

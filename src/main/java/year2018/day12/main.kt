@@ -1,6 +1,6 @@
 package year2018.day12
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 import year2018.day12.Solution.Input
 
 class Solution : BaseSolution<Input, Int, Long>("Day 12") {

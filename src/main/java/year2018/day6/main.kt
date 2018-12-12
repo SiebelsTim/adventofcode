@@ -1,6 +1,6 @@
 package year2018.day6
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 
 class Solution : BaseSolution<List<Solution.Coordinate>, Int, Int>("Day 6") {
     data class Coordinate(val x: Int, val y: Int, var area: Int = 0) {

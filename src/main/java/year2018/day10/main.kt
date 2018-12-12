@@ -1,6 +1,6 @@
 package year2018.day10
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 
 class Solution : BaseSolution<List<Solution.Light>, String, Int>("Day 10") {
     data class Light(val position: Pair<Int, Int>, val velocity: Pair<Int, Int>) {

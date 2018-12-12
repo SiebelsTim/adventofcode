@@ -1,6 +1,6 @@
 package year2018.day5
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 
 class Solution : BaseSolution<MutableList<Char>, Int, Int>("Day 5") {
     override fun parseInput(): MutableList<Char> = loadInput().trim().toMutableList()

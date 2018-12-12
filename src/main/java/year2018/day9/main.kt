@@ -1,6 +1,6 @@
 package year2018.day9
 
-import year2018.base.BaseSolution
+import base.BaseSolution
 
 typealias PlayerCount = Int
 typealias Points = Int
