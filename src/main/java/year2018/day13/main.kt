@@ -57,55 +57,45 @@ class Solution : BaseSolution<System, Coordinate, Coordinate>("Day 13") {
         fun turn(currentPosition: Type) {
             when (currentPosition) {
                 Type.INTERSECTION -> {
-                    when (nextIntersectionTurn) {
-                        Turn.LEFT -> direction = when (direction) {
-                            Direction.UP -> Direction.LEFT
-                            Direction.DOWN -> Direction.RIGHT
-                            Direction.LEFT -> Direction.DOWN
-                            Direction.RIGHT -> Direction.UP
-                        }
-                        Turn.RIGHT -> direction = when (direction) {
-                            Direction.UP -> Direction.RIGHT
-                            Direction.DOWN -> Direction.LEFT
-                            Direction.LEFT -> Direction.UP
-                            Direction.RIGHT -> Direction.DOWN
-                        }
-                        Turn.STRAIGHT -> { /* Nothing */ }
-                    }
+                    direction = direction.turn(nextIntersectionTurn)
                     nextIntersectionTurn = nextIntersectionTurn.next()
                 }
                 Type.RIGHTCURVE -> direction = when (direction) {
-                    Direction.UP -> Direction.RIGHT
-                    Direction.DOWN -> Direction.LEFT
-                    Direction.LEFT -> Direction.DOWN
-                    Direction.RIGHT -> Direction.UP
+                    Direction.UP, Direction.DOWN -> direction.turnRight()
+                    Direction.LEFT, Direction.RIGHT -> direction.turnLeft()
                 }
                 Type.LEFTCURVE -> direction = when (direction) {
-                    Direction.UP -> Direction.LEFT
-                    Direction.DOWN -> Direction.RIGHT
-                    Direction.LEFT -> Direction.UP
-                    Direction.RIGHT -> Direction.DOWN
+                    Direction.UP, Direction.DOWN -> direction.turnLeft()
+                    Direction.LEFT, Direction.RIGHT -> direction.turnRight()
                 }
                 Type.EMPTY -> throw IllegalStateException("Cannot drive into empty space")
             }
         }
 
         fun move() {
-            coordinate = when (direction) {
-                Direction.UP -> coordinate.copy(y=coordinate.y-1)
-                Direction.DOWN -> coordinate.copy(y=coordinate.y+1)
-                Direction.LEFT -> coordinate.copy(x=coordinate.x-1)
-                Direction.RIGHT -> coordinate.copy(x=coordinate.x+1)
-            }
+            coordinate = coordinate + direction
         }
     }
 
     data class Coordinate(val x: Int, val y: Int) {
         override fun toString(): String = "$x,$y"
+
+        operator fun plus(direction: Direction) = Coordinate(x + direction.dx, y + direction.dy)
     }
 
-    enum class Direction {
-        UP, DOWN, LEFT, RIGHT;
+    enum class Direction(val dx: Int, val dy: Int) {
+        UP(0, -1),
+        RIGHT(+1, 0),
+        DOWN(0, +1),
+        LEFT(-1, 0);
+
+        fun turnLeft() = values()[(ordinal - 1 + values().size) % values().size]
+        fun turnRight() = values()[(ordinal + 1) % values().size]
+        fun turn(turn: Turn) = when (turn) {
+            Turn.LEFT -> turnLeft()
+            Turn.RIGHT -> turnRight()
+            Turn.STRAIGHT -> this
+        }
 
         override fun toString(): String = when (this) {
             UP -> "^"
@@ -126,13 +116,9 @@ class Solution : BaseSolution<System, Coordinate, Coordinate>("Day 13") {
     }
 
     enum class Turn {
-        LEFT, RIGHT, STRAIGHT;
+        LEFT, STRAIGHT, RIGHT;
 
-        fun next(): Turn = when (this) {
-            LEFT -> STRAIGHT
-            STRAIGHT -> RIGHT
-            RIGHT -> LEFT
-        }
+        fun next(): Turn = values()[(ordinal + 1) % values().size]
     }
 
     enum class Type {
