@@ -92,8 +92,7 @@ class Solution : BaseSolution<Grid, Int, Int>("Day 15") {
     }
     data class Node(val position: Coordinate, val distance: Int, val previous: Node? = null, val direction: Direction? = null)
 
-    sealed class Entity(val startingPosition: Coordinate,
-                        var position: Coordinate = startingPosition,
+    sealed class Entity(var position: Coordinate,
                         var hp: Int = 200,
                         val attackPower: Int = 3) {
         val isDead: Boolean get() = hp < 0
@@ -158,19 +157,19 @@ class Solution : BaseSolution<Grid, Int, Int>("Day 15") {
         }
         abstract fun isEnemy(unit: Entity): Boolean
 
-        class Elf(startingPosition: Coordinate) : Entity(startingPosition) {
+        class Elf(startingPosition: Coordinate, attackPower: Int = 3) : Entity(startingPosition, attackPower = attackPower) {
             override fun toString(): String = "E"
             override fun isEnemy(unit: Entity): Boolean = unit !is Elf
         }
-        class Goblin(startingPosition: Coordinate) : Entity(startingPosition) {
+        class Goblin(startingPosition: Coordinate, attackPower: Int = 3) : Entity(startingPosition, attackPower = attackPower) {
             override fun toString(): String = "G"
             override fun isEnemy(unit: Entity): Boolean = unit !is Goblin
         }
 
         companion object {
             fun isEntity(char: Char): Boolean = char in listOf('G', 'E')
-            fun of(c: Char, position: Coordinate): Entity = when (c) {
-                'E' -> Elf(position)
+            fun of(c: Char, position: Coordinate, elfAttackPower: Int): Entity = when (c) {
+                'E' -> Elf(position, attackPower = elfAttackPower)
                 'G' -> Goblin(position)
                 else -> throw IllegalArgumentException("Entity not found")
             }
@@ -184,39 +183,59 @@ class Solution : BaseSolution<Grid, Int, Int>("Day 15") {
         operator fun plus(direction: Direction) = Coordinate(x+direction.dx, y+direction.dy)
     }
 
-    override fun parseInput(): Grid {
+    override fun parseInput(): Grid = getGrid()
+
+    override fun calculateResult1(): Int {
+        val input = parseInput()
+//        println(input)
+        var i = 0
+        while (input.tick()) {
+            ++i
+//            println("Round $i")
+//            println(input)
+        }
+
+//        println("END")
+//        println(input)
+
+        return input.aliveUnits.sumBy { it.hp } * i
+    }
+
+    override fun calculateResult2(): Int {
+        for (attackPower in generateSequence(4, Int::inc)) {
+            val input = getGrid(attackPower)
+            var i = 0
+            while (true) {
+                if (input.units.any { it is Entity.Elf && it.isDead }) {
+                    break
+                }
+                if (!input.tick()) {
+                    break
+                }
+                ++i
+            }
+            if (input.units.filter { it is Entity.Elf }.all { !it.isDead }) {
+                // WIN
+                return input.aliveUnits.sumBy { it.hp } * i
+            }
+        }
+        return -1
+    }
+
+    private fun getGrid(elfAttackPower: Int = 3): Grid {
         val units = mutableListOf<Entity>()
         val grid = loadInput()
             .split("\n")
             .filter { it.isNotBlank() }
             .mapIndexed { y, it -> it.toCharArray().mapIndexed { x, c ->
                 if (Entity.isEntity(c)) {
-                    units += Entity.of(c, Coordinate(x, y))
+                    units += Entity.of(c, Coordinate(x, y), elfAttackPower)
                 }
                 Type.of(c) }
             }
 
         // Reading order for units is automatically achieved
         return Grid(grid, units)
-    }
-
-    override fun calculateResult1(): Int {
-        val input = parseInput()
-        println(input)
-        var i = 0
-        while (input.tick()) {
-            println("Round ${++i}")
-            println(input)
-        }
-
-        println("END")
-        println(input)
-
-        return input.aliveUnits.sumBy { it.hp } * i
-    }
-
-    override fun calculateResult2(): Int {
-        return -1
     }
 }
 
