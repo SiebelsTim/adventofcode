@@ -7,7 +7,7 @@ class Solution : BaseSolution<List<Solution.Message>, String, Int>("Day 7") {
     data class Message(val id: Char, val dependent: Char) {
         companion object {
             fun of(line: String): Message {
-                val (dependent, id) = Regex("Step ([A-Z]) must be finished before step ([A-Z]) can begin.").find(line)!!.destructured
+                val (dependent, id) = Regex("Step ([A-Z]) must be finished before moveDirection ([A-Z]) can begin.").find(line)!!.destructured
                 return Message(id[0], dependent[0])
             }
         }
