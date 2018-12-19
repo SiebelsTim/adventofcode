@@ -85,7 +85,7 @@ class Solution : BaseSolution<Grid, Int, Int>("Day 18") {
 
         val cycles = grids.drop(grids.indexOf(current)) // Drop non-cyclic first items
         val grid = cycles[(1000000000 - grids.indexOf(current)) % cycles.size]
-        
+
         return grid.calculateResourceValue()
     }
 
