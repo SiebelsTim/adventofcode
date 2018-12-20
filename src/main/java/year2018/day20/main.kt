@@ -202,7 +202,7 @@ class Solution : BaseSolution<Solution.Regexp, Int, Int>("Day 20") {
         val paths = mutableSetOf<Node>()
 
         while (toVisit.isNotEmpty()) {
-            val node = toVisit.pollFirst()
+            val node = toVisit.pollLast()
             if (visited[node.position] == true) {
                 continue
             }
