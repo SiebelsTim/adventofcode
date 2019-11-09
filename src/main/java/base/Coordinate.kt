@@ -13,3 +13,7 @@ data class Coordinate(val x: Int, val y: Int) {
 enum class Direction(val dx: Int, val dy: Int) {
     UP(0, -1), LEFT(-1, 0), RIGHT(+1, 0), DOWN(0, +1);
 }
+
+data class Coordinate3d(val x: Int, val y: Int, val z: Int) {
+    operator fun plus(coord: Coordinate3d) = Coordinate3d(x + coord.x, y + coord.y, z + coord.z)
+}
