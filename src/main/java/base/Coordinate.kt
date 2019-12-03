@@ -1,8 +1,12 @@
 package base
 
+import kotlin.math.abs
+
 data class Coordinate(val x: Int, val y: Int) {
     operator fun plus(coord: Coordinate) = Coordinate(x + coord.x, y + coord.y)
     operator fun plus(direction: Direction) = Coordinate(x + direction.dx, y + direction.dy)
+
+    fun manhattenDistance(coord: Coordinate) = abs(coord.x - x) + abs(coord.y - y)
 
     val down get() = this + Direction.DOWN
     val up get() = this + Direction.UP
