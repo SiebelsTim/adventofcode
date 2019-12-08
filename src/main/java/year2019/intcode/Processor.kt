@@ -1,6 +1,9 @@
 package year2019.intcode
 
-import java.util.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.SendChannel
 
 fun ParameterMode(mode: Int) = if (mode == 1) ParameterMode.IMMEDIATE else ParameterMode.ADDRESS
 enum class ParameterMode {
@@ -27,76 +30,12 @@ class Program(val instructions: List<Int>) {
 
     fun withNoun(instruction: Int): Program = Program(instructions.toMutableList().also { it[1] = instruction })
     fun withVerb(instruction: Int): Program = Program(instructions.toMutableList().also { it[2] = instruction })
-
-    fun string(): String {
-        val ret = StringBuilder()
-        var ip = 0
-        fun pop() = instructions[ip++]
-
-
-        fun formatParameter(mode: ParameterMode, value: Int): String {
-            return when (mode) {
-                ParameterMode.ADDRESS -> String.format("&%03d", value)
-                ParameterMode.IMMEDIATE -> String.format("%03d", value)
-            }
-        }
-
-        fun stringAdd(instruction: Instruction) {
-            val modes = instruction.parameterModes
-            ret.append(String.format("%03d: ADD %s + %s -> %s\n", ip, formatParameter(modes.param1, pop()), formatParameter(modes.param1, pop()), formatParameter(modes.param1, pop())))
-        }
-
-        fun stringMultiply(instruction: Instruction) {
-            val modes = instruction.parameterModes
-            ret.append(String.format("%03d: MUL %s * %s -> %s\n", ip, formatParameter(modes.param1, pop()), formatParameter(modes.param1, pop()), formatParameter(modes.param1, pop())))
-        }
-
-        fun stringInput(instruction: Instruction) {
-            ret.append(String.format("%03d: IPT -> %s\n", ip, formatParameter(instruction.parameterModes.param1, pop())))
-        }
-
-        fun stringOutput(instruction: Instruction) {
-            ret.append(String.format("%03d: OPT -> %s\n", ip, formatParameter(instruction.parameterModes.param1, pop())))
-        }
-
-        fun stringHalt(instruction: Instruction) {
-            ret.append(String.format("%03d: HLT\n", ip))
-        }
-
-        val stringifyMap = mutableMapOf<Int, (Instruction) -> Unit>(
-                1 to ::stringAdd,
-                2 to ::stringMultiply,
-                3 to ::stringInput,
-                4 to ::stringOutput,
-                99 to ::stringHalt
-        )
-
-        while(true) {
-            if (ip >= instructions.size) {
-                break
-            }
-            val instruction = Instruction(pop())
-            val stringify = stringifyMap[instruction.opcode]
-            if (null == stringify) {
-                ret.append(String.format("%03d: UNKNOWN${instruction.opcode}\n", ip))
-            } else {
-                stringify(instruction)
-            }
-        }
-
-        ip = 0
-
-        return ret.toString()
-    }
 }
 
-class Processor(private val program: Program) {
+class Processor(private val program: Program, val input: ReceiveChannel<Int> = Channel<Int>(UNLIMITED), val output: SendChannel<Int> = Channel<Int>(UNLIMITED), val name: String = "Test") {
     private val memory: MutableList<Int> = program.instructions.toMutableList()
 
-    private val input: Deque<Int> = ArrayDeque()
-    val output = mutableListOf<Int>()
-
-    private val opCodeMap = mutableMapOf<Int, (ParameterModes) -> Unit>(
+    private val opCodeMap = mutableMapOf<Int, suspend (ParameterModes) -> Unit>(
             1 to ::add,
             2 to ::multiply,
             3 to ::movInput,
@@ -110,7 +49,7 @@ class Processor(private val program: Program) {
 
     var ip = 0
     var running = false
-    fun runProgram(): Int {
+    suspend fun runProgram(): Int {
         running = true
         while (running) {
             val instr = Instruction(memory[ip++])
@@ -118,13 +57,9 @@ class Processor(private val program: Program) {
             operation(instr.parameterModes)
         }
 
-        return memory[0]
-    }
+        output.close()
 
-    fun input(vararg values: Int) {
-        for (value in values) {
-            input.push(value)
-        }
+        return memory[0]
     }
 
     private fun pop(): Int {
@@ -140,7 +75,7 @@ class Processor(private val program: Program) {
         }
     }
 
-    private fun add(modes: ParameterModes) {
+    private suspend fun add(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
         require(modes.param3 == ParameterMode.ADDRESS)
@@ -148,7 +83,7 @@ class Processor(private val program: Program) {
         memory[dest] = a + b
     }
 
-    private fun multiply(modes: ParameterModes) {
+    private suspend fun multiply(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
         require(modes.param3 == ParameterMode.ADDRESS)
@@ -156,16 +91,18 @@ class Processor(private val program: Program) {
         memory[dest] = a * b
     }
 
-    private fun movInput(modes: ParameterModes) {
+    private suspend fun movInput(modes: ParameterModes) {
         require(modes.param1 == ParameterMode.ADDRESS)
-        memory[pop()] = input.pop()
+        val inp = input.receive()
+        memory[pop()] = inp
     }
 
-    private fun movOutput(modes: ParameterModes) {
-        output += popValue(modes.param1)
+    private suspend fun movOutput(modes: ParameterModes) {
+        val value = popValue(modes.param1)
+        output.send(value)
     }
 
-    private fun jmpTrue(modes: ParameterModes) {
+    private suspend fun jmpTrue(modes: ParameterModes) {
         val value = popValue(modes.param1)
         val dest = popValue(modes.param2)
         if (value != 0) {
@@ -173,7 +110,7 @@ class Processor(private val program: Program) {
         }
     }
 
-    private fun jmpFalse(modes: ParameterModes) {
+    private suspend fun jmpFalse(modes: ParameterModes) {
         val value = popValue(modes.param1)
         val dest = popValue(modes.param2)
         if (value == 0) {
@@ -181,7 +118,7 @@ class Processor(private val program: Program) {
         }
     }
 
-    private fun lt(modes: ParameterModes) {
+    private suspend fun lt(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
         val dest = pop()
@@ -189,7 +126,7 @@ class Processor(private val program: Program) {
         memory[dest] = if (a < b) 1 else 0
     }
 
-    private fun eq(modes: ParameterModes) {
+    private suspend fun eq(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
         val dest = pop()
@@ -197,7 +134,7 @@ class Processor(private val program: Program) {
         memory[dest] = if (a == b) 1 else 0
     }
 
-    private fun halt(modes: ParameterModes) {
+    private suspend fun halt(modes: ParameterModes) {
         running = false
     }
 }
