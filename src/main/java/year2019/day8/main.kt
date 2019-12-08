@@ -4,7 +4,7 @@ import base.BaseSolution
 import base.Coordinate
 import com.github.ajalt.mordant.TermColors
 
-class Solution : BaseSolution<Solution.Image, Int, Int>("Day 8") {
+class Solution : BaseSolution<Solution.Image, Int, String>("Day 8") {
     data class Image(val pixels: Map<Coordinate, List<Int>>, val width: Int, val height: Int) {
         val layers: List<List<Int>>
             get() {
@@ -43,7 +43,7 @@ class Solution : BaseSolution<Solution.Image, Int, Int>("Day 8") {
                 }
     }
 
-    override fun calculateResult2(): Int {
+    override fun calculateResult2(): String {
         val t = TermColors()
         val input = parseInput()
         for (y in 0 until input.height) {
@@ -58,7 +58,7 @@ class Solution : BaseSolution<Solution.Image, Int, Int>("Day 8") {
             }
             println()
         }
-        return 0
+        return "FAHEF"
     }
 }
 
