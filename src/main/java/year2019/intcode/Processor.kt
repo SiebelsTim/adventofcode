@@ -5,55 +5,30 @@ import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 
-fun ParameterMode(mode: Int) = if (mode == 1) ParameterMode.IMMEDIATE else ParameterMode.ADDRESS
-enum class ParameterMode {
-    ADDRESS, IMMEDIATE
-}
-fun ParameterModes(instruction: Int): ParameterModes {
-    val opcode = (instruction % 100);
-    val mode1 = (instruction / 100) % 10
-    assert(mode1 <= 1, { "Bad instruction $instruction" })
-    val mode2 = (instruction / 1000) % 10
-    assert(mode2 <= 1, { "Bad instruction $instruction" })
-    val mode3 = (instruction / 10000) % 10
-    assert(mode3 <= 1, { "Bad instruction $instruction" })
-    return ParameterModes(ParameterMode(mode1), ParameterMode(mode2), ParameterMode(mode3))
-}
-data class ParameterModes(val param1: ParameterMode, val param2: ParameterMode, val param3: ParameterMode)
+class Processor(private val program: Program, val input: ReceiveChannel<Long> = Channel(UNLIMITED), val output: SendChannel<MemoryCell> = Channel(UNLIMITED)) {
+    private val memory = program.instructions.toMemory()
 
-class Instruction(val opcode: Int, val parameterModes: ParameterModes) {
-    constructor(instruction: Int): this(instruction % 100, ParameterModes(instruction))
-}
-
-class Program(val instructions: List<Int>) {
-    constructor(instructions: String) : this(instructions.split(",").map { it.toInt() })
-
-    fun withNoun(instruction: Int): Program = Program(instructions.toMutableList().also { it[1] = instruction })
-    fun withVerb(instruction: Int): Program = Program(instructions.toMutableList().also { it[2] = instruction })
-}
-
-class Processor(private val program: Program, val input: ReceiveChannel<Int> = Channel<Int>(UNLIMITED), val output: SendChannel<Int> = Channel<Int>(UNLIMITED), val name: String = "Test") {
-    private val memory: MutableList<Int> = program.instructions.toMutableList()
-
-    private val opCodeMap = mutableMapOf<Int, suspend (ParameterModes) -> Unit>(
-            1 to ::add,
-            2 to ::multiply,
-            3 to ::movInput,
-            4 to ::movOutput,
-            5 to ::jmpTrue,
-            6 to ::jmpFalse,
-            7 to ::lt,
-            8 to ::eq,
-            99 to ::halt
+    private val opCodeMap = mutableMapOf<MemoryCell, suspend (ParameterModes) -> Unit>(
+            1L to ::add,
+            2L to ::multiply,
+            3L to ::movInput,
+            4L to ::movOutput,
+            5L to ::jmpTrue,
+            6L to ::jmpFalse,
+            7L to ::lt,
+            8L to ::eq,
+            9L to ::adjustRelativeBase,
+            99L to ::halt
     )
 
-    var ip = 0
+    var ip = 0L
     var running = false
-    suspend fun runProgram(): Int {
+    var relativeBase = 0L
+    suspend fun runProgram(): MemoryCell {
         running = true
         while (running) {
             val instr = Instruction(memory[ip++])
-            val operation = opCodeMap[instr.opcode] ?: throw IllegalArgumentException("Unexpected opcode: ip: $ip, code: $instr")
+            val operation = opCodeMap[instr.opcode] ?: throw IllegalArgumentException("Unexpected opcode at ip: $ip, code: ${instr.opcode}")
             operation(instr.parameterModes)
         }
 
@@ -62,79 +37,112 @@ class Processor(private val program: Program, val input: ReceiveChannel<Int> = C
         return memory[0]
     }
 
-    private fun pop(): Int {
-        return memory[ip++]
-    }
+    private fun pop() = memory[ip++]
 
-    private fun popValue(mode: ParameterMode): Int {
+    private fun popValue(mode: ParameterMode): MemoryCell {
         val value = pop()
 
         return when (mode) {
             ParameterMode.ADDRESS -> memory[value]
             ParameterMode.IMMEDIATE -> value
+            ParameterMode.RELATIVE -> memory[relativeBase + value]
         }
+    }
+
+    private fun setMemory(value: MemoryCell, mode: ParameterMode) = when (mode) {
+        ParameterMode.ADDRESS -> {
+            val destination = pop()
+            memory[destination] = value
+
+            destination
+        }
+        ParameterMode.RELATIVE -> {
+            val destination = relativeBase + pop()
+            memory[destination] = value
+
+            destination
+        }
+        ParameterMode.IMMEDIATE -> throw IllegalArgumentException("Cannot use IMMEDIATE as destination")
     }
 
     private suspend fun add(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
-        require(modes.param3 == ParameterMode.ADDRESS)
-        val dest = pop()
-        memory[dest] = a + b
+        val result = a + b
+        val destAddr = setMemory(result, modes.param3)
+        debug("$destAddr <- $a + $b")
     }
 
     private suspend fun multiply(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
-        require(modes.param3 == ParameterMode.ADDRESS)
-        val dest = pop()
-        memory[dest] = a * b
+        val result = a * b
+        val destAddr = setMemory(result, modes.param3)
+        debug("$destAddr <- $a * $b")
     }
 
     private suspend fun movInput(modes: ParameterModes) {
-        require(modes.param1 == ParameterMode.ADDRESS)
         val inp = input.receive()
-        memory[pop()] = inp
+        val destAddr = setMemory(inp, modes.param1)
+        debug("IN $inp -> $destAddr")
     }
 
     private suspend fun movOutput(modes: ParameterModes) {
         val value = popValue(modes.param1)
         output.send(value)
+        debug("OUT $value")
     }
 
     private suspend fun jmpTrue(modes: ParameterModes) {
         val value = popValue(modes.param1)
         val dest = popValue(modes.param2)
-        if (value != 0) {
+        if (value != 0L) {
             ip = dest
         }
+        debug("JNZ $value ==> $dest")
     }
 
     private suspend fun jmpFalse(modes: ParameterModes) {
         val value = popValue(modes.param1)
         val dest = popValue(modes.param2)
-        if (value == 0) {
+        if (value == 0L) {
             ip = dest
         }
+        debug("JMPZ $value ==> $dest")
     }
 
     private suspend fun lt(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
-        val dest = pop()
+        val result = if (a < b) 1L else 0L
+        val destAddr = setMemory(result, modes.param3)
 
-        memory[dest] = if (a < b) 1 else 0
+        debug("$destAddr <- $a < $b")
     }
 
     private suspend fun eq(modes: ParameterModes) {
         val a = popValue(modes.param1)
         val b = popValue(modes.param2)
-        val dest = pop()
+        val result = if (a == b) 1L else 0L
+        val destAddr = setMemory(result, modes.param3)
 
-        memory[dest] = if (a == b) 1 else 0
+        debug("$destAddr <- $a == $b")
+    }
+
+    private suspend fun adjustRelativeBase(modes: ParameterModes) {
+        val a = popValue(modes.param1)
+        relativeBase += a
+        debug("BASE += $a == $relativeBase")
     }
 
     private suspend fun halt(modes: ParameterModes) {
+        debug("HLT")
         running = false
+    }
+
+    private fun debug(msg: String) {
+        if (false) {
+            println(msg)
+        }
     }
 }
