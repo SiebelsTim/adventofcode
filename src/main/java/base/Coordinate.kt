@@ -20,4 +20,8 @@ enum class Direction(val dx: Int, val dy: Int) {
 
 data class Coordinate3d(val x: Int, val y: Int, val z: Int) {
     operator fun plus(coord: Coordinate3d) = Coordinate3d(x + coord.x, y + coord.y, z + coord.z)
+    operator fun minus(coord: Coordinate3d) = Coordinate3d(x - coord.x, y - coord.y, z - coord.z)
+    operator fun unaryMinus() = Coordinate3d(0, 0, 0) - this
+
+    override fun toString(): String = "<x=$x, y=$y, z=$z>"
 }
