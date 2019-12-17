@@ -5,7 +5,7 @@ import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 
-class Processor(private val program: Program, val input: ReceiveChannel<Long> = Channel(UNLIMITED), val output: SendChannel<MemoryCell> = Channel(UNLIMITED)) {
+class Processor(private val program: Program, val input: ReceiveChannel<Long> = Channel(UNLIMITED), val output: SendChannel<MemoryCell> = Channel(UNLIMITED), val debugging: Boolean = false) {
     private val memory = program.instructions.toMemory()
 
     private val opCodeMap = mutableMapOf<MemoryCell, suspend (ParameterModes) -> Unit>(
@@ -141,7 +141,7 @@ class Processor(private val program: Program, val input: ReceiveChannel<Long> = 
     }
 
     private fun debug(msg: String) {
-        if (false) {
+        if (debugging) {
             println(msg)
         }
     }

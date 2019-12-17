@@ -8,6 +8,7 @@ class Instruction(val opcode: MemoryCell, val parameterModes: ParameterModes) {
 class Program(val instructions: List<MemoryCell>) {
     constructor(instructions: String) : this(instructions.split(",").map { it.trim().toLong() })
 
-    fun withNoun(instruction: MemoryCell): Program = Program(instructions.toMutableList().also { it[1] = instruction })
-    fun withVerb(instruction: MemoryCell): Program = Program(instructions.toMutableList().also { it[2] = instruction })
+    fun withNoun(instruction: MemoryCell): Program = withAddressChanged(1, instruction)
+    fun withVerb(instruction: MemoryCell): Program = withAddressChanged(2, instruction)
+    fun withAddressChanged(pos: Int, instruction: MemoryCell): Program = Program(instructions.toMutableList().also { it[pos] = instruction })
 }
