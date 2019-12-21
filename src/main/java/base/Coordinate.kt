@@ -12,10 +12,21 @@ data class Coordinate(val x: Int, val y: Int) {
     val up get() = this + Direction.UP
     val left get() = this + Direction.LEFT
     val right get() = this + Direction.RIGHT
+
+    fun neighbors() = listOf(
+            up, right, down, left
+    )
 }
 
 enum class Direction(val dx: Int, val dy: Int) {
     UP(0, -1), LEFT(-1, 0), RIGHT(+1, 0), DOWN(0, +1);
+
+    fun reverse(): Direction = when(this) {
+        UP -> DOWN
+        LEFT -> RIGHT
+        RIGHT -> LEFT
+        DOWN -> UP
+    }
 }
 
 data class Coordinate3d(val x: Int, val y: Int, val z: Int) {
